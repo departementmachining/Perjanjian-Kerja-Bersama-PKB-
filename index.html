@@ -47,6 +47,24 @@
       from { opacity: 0.6; transform: scale(0.99); }
       to { opacity: 1; transform: scale(1); }
     }
+    /* Scrollbar tipis dan serasi untuk konten halaman yang panjang */
+    .book-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(30, 58, 138, 0.35) transparent;
+    }
+    .book-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .book-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .book-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(30, 58, 138, 0.35);
+      border-radius: 999px;
+    }
+    .book-scroll::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(30, 58, 138, 0.55);
+    }
   </style>
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
@@ -131,7 +149,7 @@
         <!-- AREA KONTEN MATERI UTAMA -->
         <div class="p-8 md:p-12 z-10 flex-1 flex flex-col justify-between relative pointer-events-none">
           
-          <div id="page-container" class="page-fade">
+          <div id="page-container" class="page-fade max-h-[360px] md:max-h-[420px] overflow-y-auto pointer-events-auto pr-1 book-scroll relative z-40">
             <!-- Loading Spinner Sementara Saat Data Diambil -->
             <div class="flex flex-col items-center justify-center py-32 text-center">
               <svg class="animate-spin h-8 w-8 text-blue-800 mb-3" fill="none" viewBox="0 0 24 24">
@@ -209,6 +227,29 @@
     let currentPageIndex = 0;
     let searchQuery = "";
 
+    // Konversi angka ke format Romawi (mendukung 1 - 3999)
+    function toRoman(num) {
+      if (!num || num < 1) return String(num);
+      const map = [
+        [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
+        [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
+        [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
+      ];
+      let result = '';
+      let n = num;
+      for (const [value, symbol] of map) {
+        while (n >= value) {
+          result += symbol;
+          n -= value;
+        }
+      }
+      return result;
+    }
+
+    function formatPageNumber(pageNumber, numberFormat) {
+      return numberFormat === 'roman' ? toRoman(pageNumber) : String(pageNumber);
+    }
+
     // Memuat Data dari Supabase
     async function fetchBookFromCloud() {
       const indicator = document.getElementById('conn-indicator');
@@ -230,7 +271,8 @@
             id: item.id,
             pageNumber: Number(item.page_number),
             title: item.title || 'Tanpa Judul',
-            content: item.content || ''
+            content: item.content || '',
+            numberFormat: item.number_format || 'numeric'
           }));
           // Sinkronisasikan juga ke lokal sebagai cache cadangan (mode offline)
           localStorage.setItem('pustaka_klasik_pages', JSON.stringify(pages));
@@ -315,10 +357,10 @@
           ${page.content}
         </p>
       `;
-      pageNumSpan.textContent = `${page.pageNumber}`;
+      pageNumSpan.textContent = formatPageNumber(page.pageNumber, page.numberFormat);
 
       const totalHal = listHalaman.length;
-      progressSpan.textContent = `Halaman ${page.pageNumber} dari ${totalHal} Hlm`;
+      progressSpan.textContent = `Halaman ${formatPageNumber(page.pageNumber, page.numberFormat)} dari ${totalHal} Hlm`;
     }
 
     function navPrev() {
@@ -386,5 +428,3 @@
   </script>
 </body>
 </html>
-
-```
