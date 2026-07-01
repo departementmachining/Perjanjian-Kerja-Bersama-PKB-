@@ -126,18 +126,20 @@
         <!-- WATERMARK LOGO TRANSPARAN -->
         <img id="page-logo-watermark" class="hidden absolute inset-0 m-auto max-w-[55%] max-h-[55%] object-contain opacity-[0.07] pointer-events-none select-none z-0" alt="" />
 
-        <!-- ZONA KLIK NAVIGASI TRANSPARAN (50% KIRI & 50% KANAN) -->
-        <div class="absolute inset-0 flex z-30 pointer-events-none">
+        <!-- ZONA KLIK NAVIGASI TRANSPARAN (PINGGIR KIRI & KANAN SAJA) -->
+        <div class="absolute inset-0 flex z-20 pointer-events-none">
           <!-- Zona Kiri (Mundur) -->
-          <div onclick="navPrev()" title="Klik bagian kiri untuk Halaman Sebelumnya" class="w-1/2 h-full cursor-w-resize pointer-events-auto group relative">
+          <div onclick="navPrev()" title="Klik bagian kiri untuk Halaman Sebelumnya" class="w-[15%] md:w-[18%] h-full cursor-w-resize pointer-events-auto group relative">
             <div class="absolute left-3 top-1/2 -translate-y-1/2 bg-stone-900/5 group-hover:bg-stone-900/10 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
               <svg class="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path>
               </svg>
             </div>
           </div>
+          <!-- Ruang tengah dibiarkan kosong (tidak menangkap klik) agar konten bisa di-scroll bebas -->
+          <div class="flex-1 h-full"></div>
           <!-- Zona Kanan (Maju) -->
-          <div onclick="navNext()" title="Klik bagian kanan untuk Halaman Berikutnya" class="w-1/2 h-full cursor-e-resize pointer-events-auto group relative">
+          <div onclick="navNext()" title="Klik bagian kanan untuk Halaman Berikutnya" class="w-[15%] md:w-[18%] h-full cursor-e-resize pointer-events-auto group relative">
             <div class="absolute right-3 top-1/2 -translate-y-1/2 bg-stone-900/5 group-hover:bg-stone-900/10 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
               <svg class="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path>
@@ -147,9 +149,9 @@
         </div>
 
         <!-- AREA KONTEN MATERI UTAMA -->
-        <div class="p-8 md:p-12 z-10 flex-1 flex flex-col justify-between relative pointer-events-none">
+        <div class="p-8 md:p-12 z-10 flex-1 flex flex-col justify-between relative">
           
-          <div id="page-container" class="page-fade max-h-[360px] md:max-h-[420px] overflow-y-auto pointer-events-auto pr-1 book-scroll relative z-40">
+          <div id="page-container" class="page-fade max-h-[360px] md:max-h-[420px] overflow-y-auto pr-1 book-scroll relative">
             <!-- Loading Spinner Sementara Saat Data Diambil -->
             <div class="flex flex-col items-center justify-center py-32 text-center">
               <svg class="animate-spin h-8 w-8 text-blue-800 mb-3" fill="none" viewBox="0 0 24 24">
@@ -428,3 +430,5 @@
   </script>
 </body>
 </html>
+
+```
