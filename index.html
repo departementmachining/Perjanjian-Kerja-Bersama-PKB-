@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Kontrol Admin & Scanner AI - Pustaka Klasik</title>
+  <title>Pustaka Buku Fisik Interaktif</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <!-- Google Fonts -->
+  <!-- Google Fonts untuk nuansa buku fisik -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,512 +21,246 @@
     .font-header-book {
       font-family: 'Cinzel', serif;
     }
+    /* Tekstur kertas halus */
+    .paper-texture {
+      background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0), radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 0);
+      background-size: 8px 8px;
+      background-position: 0 0, 4px 4px;
+    }
+    /* Efek bayangan tumpukan kertas 3D di bawah buku */
+    .book-shadow {
+      box-shadow: 
+        0 1px 1px rgba(0,0,0,0.1),
+        0 10px 0 -5px #eee7d6,
+        0 10px 1px -4px rgba(0,0,0,0.15),
+        0 20px 0 -10px #e1d8c1,
+        0 20px 1px -9px rgba(0,0,0,0.15),
+        0 30px 0 -15px #d2c8ae,
+        0 30px 1px -14px rgba(0,0,0,0.15),
+        0 40px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+    /* Animasi pergantian halaman halus */
+    .page-fade {
+      animation: fadeInPage 0.3s ease-in-out;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0.6; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    /* Scrollbar tipis dan serasi untuk konten halaman yang panjang */
+    .book-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(30, 58, 138, 0.35) transparent;
+    }
+    .book-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .book-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .book-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(30, 58, 138, 0.35);
+      border-radius: 999px;
+    }
+    .book-scroll::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(30, 58, 138, 0.55);
+    }
+    /* Landing / gerbang sebelum masuk buku */
+    #landing-screen {
+      background: radial-gradient(ellipse at center, #1c1917 0%, #0c0a09 100%);
+      background-size: cover;
+      background-position: center;
+      transition: background 0.6s ease;
+    }
+    #landing-screen.has-bg-image::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    #book-title-display {
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+      position: relative;
+      z-index: 1;
+    }
+    #book-title-display.title-synced {
+      color: #93c5fd;
+      text-shadow: 0 0 24px rgba(59, 130, 246, 0.55), 0 0 60px rgba(59, 130, 246, 0.25);
+    }
+    #book-title-display.title-unsynced {
+      color: #57534e;
+      text-shadow: none;
+    }
+    #book-period-display {
+      position: relative;
+      z-index: 1;
+    }
+    #landing-screen > div, #landing-screen > footer, #landing-screen > button {
+      position: relative;
+      z-index: 1;
+    }
+    /* Modal pencarian - transparan dengan efek blur */
+    #search-modal-backdrop {
+      background: rgba(12, 10, 9, 0.35);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    /* Toast notifikasi status sinkron */
+    #sync-toast {
+      transform: translateY(-20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+    }
+    #sync-toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
-<body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+<body class="bg-stone-900 text-stone-100 h-screen w-screen overflow-hidden flex flex-col">
 
-  <!-- ================= HEADER ADMIN ================= -->
-  <header class="bg-stone-950 border-b border-stone-800 px-4 py-4 md:px-8 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="p-2 bg-blue-800 rounded-lg text-white shadow-inner">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold tracking-wider font-header-book text-blue-700">Panel Kontrol Admin</h1>
-          <p class="text-xs text-stone-400 font-sans">Hubungkan buku dengan Supabase untuk akses lintas platform</p>
-        </div>
-      </div>
-
-      <!-- Kembali ke Berkas Utama (Buku) -->
-      <a href="index.html" class="px-5 py-2 rounded-lg text-xs font-semibold tracking-wider bg-blue-800 text-white hover:bg-blue-700 font-bold transition-all shadow-md">
-        📖 Buka Mode Membaca Buku
-      </a>
-    </div>
-  </header>
-
-  <!-- ================= NOTIFIKASI TOAST ================= -->
-  <div id="toast-notif" class="fixed top-24 right-4 z-50 transform translate-x-96 opacity-0 transition-all duration-300 bg-blue-700 text-white px-5 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2 border border-blue-500">
-    <span id="toast-icon">✨</span>
-    <span id="toast-message">Notifikasi</span>
+  <!-- ================= TOAST NOTIFIKASI STATUS SINKRON ================= -->
+  <div id="sync-toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 px-4 py-2.5 rounded-full bg-stone-950/95 border border-stone-800 shadow-2xl text-xs font-semibold backdrop-blur">
+    <span id="sync-toast-dot" class="w-2 h-2 rounded-full bg-stone-500"></span>
+    <span id="sync-toast-text" class="text-stone-200">Menghubungkan ke Supabase...</span>
   </div>
 
-  <!-- ================= MODAL KONFIRMASI HAPUS ================= -->
-  <div id="delete-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-    <div class="bg-stone-800 border border-stone-700 text-stone-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-      <h3 class="text-lg font-bold font-serif-book text-blue-700 mb-2">Hapus Halaman Ini?</h3>
-      <p class="text-sm text-stone-400 mb-6">Materi di halaman ini akan dihapus dari buku Anda selamanya.</p>
-      <div class="flex justify-end gap-3">
-        <button onclick="closeDeleteModal()" class="px-4 py-2 text-sm font-medium text-stone-400 hover:bg-stone-700 rounded-lg transition">Batal</button>
-        <button id="confirm-delete-btn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition">Hapus</button>
-      </div>
+  <!-- ================= LANDING / GERBANG SEBELUM BUKU ================= -->
+  <div id="landing-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center px-6">
+    <div class="w-full max-w-2xl text-center">
+      <p class="text-xs uppercase tracking-[0.3em] text-blue-600 font-semibold mb-4">Selamat Datang</p>
+      <h1
+        id="book-title-display"
+        class="title-unsynced w-full text-4xl md:text-6xl font-header-book font-bold py-2"
+      >Pustaka Klasik</h1>
+      <p id="book-period-display" class="text-sm text-stone-400 tracking-[0.2em] mt-3">2025-2027</p>
     </div>
+
+    <!-- Footer dipindahkan ke bawah judul, di dalam panel landing -->
+    <footer class="mt-10 text-center text-xs text-stone-600 px-4">
+      <p>© 2026 Pustaka Buku Fisik Klasik. Hak Cipta Terlindungi.</p>
+      <p class="text-blue-800/50 font-medium mt-0.5">Model Cloud Supabase Terintegrasi</p>
+    </footer>
+
+    <!-- Tombol Buka Pojok Kanan Bawah -->
+    <button
+      onclick="openBook()"
+      class="fixed bottom-6 right-6 md:bottom-10 md:right-10 flex items-center gap-2 px-6 py-3.5 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-full shadow-2xl transition-all active:scale-95 z-50"
+    >
+      <span>Buka</span>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+      </svg>
+    </button>
   </div>
 
-  <!-- ================= MODAL HUBUNGKAN GEMINI API ================= -->
-  <div id="gemini-connect-modal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
-    <div class="bg-stone-800 border border-stone-700 text-stone-200 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-      <h3 class="text-lg font-bold font-serif-book text-amber-400 mb-2 flex items-center gap-2">🔑 Hubungkan Gemini API</h3>
-      <p class="text-sm text-stone-400 mb-4">Tempelkan API key Gemini Anda di bawah ini. Key akan disimpan hanya di browser/perangkat ini (tidak dikirim ke server manapun selain Google).</p>
+  <!-- ================= TOMBOL CARI MENGAMBANG (KECIL) ================= -->
+  <button
+    onclick="openSearchModal()"
+    class="fixed top-4 right-4 z-40 p-2 bg-stone-950/80 hover:bg-stone-900 border border-stone-800 rounded-full shadow-lg backdrop-blur transition-all active:scale-95"
+    title="Cari bab atau materi buku"
+  >
+    <svg class="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+  </button>
 
-      <label class="block text-xs font-bold text-stone-300 mb-1">API Key Gemini</label>
-      <input
-        type="password"
-        id="gemini-key-input"
-        placeholder="Tempelkan API key di sini..."
-        class="w-full bg-stone-900 border border-stone-700 text-stone-200 placeholder-stone-600 px-3 py-2 rounded-xl focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm mb-2"
-      />
-      <button
-        type="button"
-        onclick="toggleGeminiKeyVisibility()"
-        id="btn-toggle-key-visibility"
-        class="text-[11px] text-amber-400 hover:text-amber-300 font-semibold mb-4"
-      >
-        👁️ Tampilkan key
-      </button>
-
-      <p class="text-[11px] text-stone-500 mb-4">
-        Belum punya key? Buat gratis di
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-amber-400 underline">aistudio.google.com/apikey</a>.
-      </p>
-
-      <div class="flex justify-end gap-3">
-        <button onclick="closeGeminiConnectModal()" class="px-4 py-2 text-sm font-medium text-stone-400 hover:bg-stone-700 rounded-lg transition">Batal</button>
-        <button onclick="saveGeminiKey()" class="px-4 py-2 text-sm font-medium text-stone-900 bg-amber-500 hover:bg-amber-400 rounded-lg transition font-bold">Simpan & Hubungkan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= LAYOUT UTAMA PANEL ADMIN ================= -->
-  <main class="max-w-7xl mx-auto px-4 py-8 md:py-12 w-full flex-1">
-    
-    <!-- SECTION 1: INTEGRASI DATABASE SUPABASE -->
-    <section class="bg-gradient-to-br from-stone-850 to-stone-800 border border-emerald-500/30 p-6 rounded-2xl shadow-xl mb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4">
-        <div>
-          <h3 class="font-bold text-lg text-emerald-400 font-serif-book flex items-center gap-2">
-            <span>🟢 Database Supabase</span>
-            <span id="supabase-status-badge" class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-sans tracking-wide uppercase">Memeriksa...</span>
-          </h3>
-          <p class="text-xs text-stone-400 mt-0.5">Semua perubahan pada halaman buku langsung disimpan dan diambil secara real-time dari database Supabase. Tidak perlu tombol sinkronisasi manual.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION JUDUL: NAMA BUKU -->
-    <section class="bg-gradient-to-br from-stone-850 to-stone-800 border border-blue-500/30 p-6 rounded-2xl shadow-xl mb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-4 border-b border-stone-700/80">
-        <div>
-          <h3 class="font-bold text-lg text-blue-400 font-serif-book flex items-center gap-2">
-            <span>📕 Judul Buku</span>
-          </h3>
-          <p class="text-xs text-stone-400 mt-0.5">Judul dan periode ini akan tampil di tengah layar sambutan (landing) sebelum pembaca membuka buku. Hanya bisa diubah dari sini.</p>
-        </div>
-      </div>
-
-      <div class="flex flex-col md:flex-row gap-3 items-stretch mb-3">
+  <!-- ================= MODAL POPUP PENCARIAN (HITAM) ================= -->
+  <div id="search-modal-backdrop" class="fixed inset-0 z-50 hidden items-start justify-center pt-24 px-4">
+    <div class="w-full max-w-xl">
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-stone-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </span>
         <input
           type="text"
-          id="book-title-input"
-          placeholder="Contoh: Pustaka Klasik"
-          class="flex-1 bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-600 px-4 py-2.5 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-header-book"
+          id="search-input"
+          oninput="handleSearch()"
+          placeholder="Cari bab atau materi buku..."
+          autocomplete="off"
+          class="w-full bg-black border border-stone-700 text-stone-100 placeholder-stone-500 pl-12 pr-12 py-4 rounded-xl focus:outline-none focus:border-blue-600 text-base shadow-2xl"
         />
-        <input
-          type="text"
-          id="book-period-input"
-          placeholder="Contoh: 2025-2027"
-          class="md:w-40 bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-600 px-4 py-2.5 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
-        />
-        <button
-          type="button"
-          onclick="saveBookTitle()"
-          id="btn-save-title"
-          class="py-2.5 px-6 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition active:scale-95 whitespace-nowrap"
-        >
-          💾 Simpan
+        <button id="clear-search-btn" onclick="clearSearch()" class="absolute inset-y-0 right-14 flex items-center px-2 text-stone-400 hover:text-stone-200 hidden">
+          ✕
+        </button>
+        <button onclick="closeSearchModal()" class="absolute inset-y-0 right-0 flex items-center pr-4 text-stone-400 hover:text-stone-200" title="Tutup">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
-      <p class="text-xs text-stone-400" id="title-current-status">Memeriksa judul saat ini...</p>
-      <p class="text-xs text-stone-400 mt-1" id="period-current-status">Memeriksa periode saat ini...</p>
-    </section>
+      <p class="text-center text-xs text-stone-600 mt-4">Tekan Esc atau klik di luar kotak untuk menutup</p>
+    </div>
+  </div>
 
-    <!-- SECTION BACKGROUND LANDING -->
-    <section class="bg-gradient-to-br from-stone-850 to-stone-800 border border-purple-500/30 p-6 rounded-2xl shadow-xl mb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-4 border-b border-stone-700/80">
-        <div>
-          <h3 class="font-bold text-lg text-purple-400 font-serif-book flex items-center gap-2">
-            <span>🎨 Background Layar Sambutan</span>
-          </h3>
-          <p class="text-xs text-stone-400 mt-0.5">Atur latar belakang layar sambutan (landing) sebelum buku dibuka. Bisa pakai gambar atau warna/gradasi. Jika gambar diunggah, gambar akan diprioritaskan.</p>
-        </div>
-      </div>
+  <!-- ================= AREA BUKU FULL LAYAR ================= -->
+  <main class="w-full flex-1 flex flex-col justify-center px-4 py-6 overflow-hidden">
 
-      <!-- Sub: Upload Gambar Background -->
-      <div class="mb-6">
-        <p class="text-xs font-bold text-stone-300 mb-2">Opsi 1 — Gambar Background</p>
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div class="md:col-span-4 flex flex-col items-center justify-center gap-3 bg-stone-900/60 border-2 border-dashed border-stone-700 rounded-xl p-4 min-h-[120px] relative">
-            <input
-              type="file"
-              id="bg-image-file-input"
-              accept="image/*"
-              onchange="handleBgImageUpload(event)"
-              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-            <img id="bg-image-preview" class="hidden max-h-[90px] object-contain rounded-lg" alt="Pratinjau Background" />
-            <div id="bg-image-placeholder" class="text-center space-y-1 pointer-events-none">
-              <svg class="w-7 h-7 text-stone-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+    <!-- STRUKTUR BUKU TERBUKA (PORTRAIT 1-PAGE DECK, FULL LAYAR) -->
+    <div class="relative w-full max-w-3xl mx-auto h-full flex flex-col justify-center">
+
+      <!-- Cover Luar Belakang Buku -->
+      <div class="absolute -inset-1.5 bg-gradient-to-r from-blue-950 via-stone-900 to-blue-950 rounded-xl border border-blue-900/40 pointer-events-none"></div>
+
+      <!-- LEMBARAN HALAMAN BUKU -->
+      <div class="relative bg-[#faf6ee] paper-texture text-stone-900 rounded-lg h-[85vh] max-h-[820px] flex flex-col justify-between overflow-hidden border border-blue-100/70 book-shadow">
+
+        <!-- WATERMARK LOGO TRANSPARAN -->
+        <img id="page-logo-watermark" class="hidden absolute inset-0 m-auto max-w-[55%] max-h-[55%] object-contain opacity-[0.07] pointer-events-none select-none z-0" alt="" />
+
+        <!-- ZONA KLIK NAVIGASI TRANSPARAN (PINGGIR KIRI & KANAN SAJA) -->
+        <div class="absolute inset-0 flex z-20 pointer-events-none">
+          <!-- Zona Kiri (Mundur) -->
+          <div onclick="navPrev()" title="Klik bagian kiri untuk Halaman Sebelumnya" class="w-[15%] md:w-[18%] h-full cursor-w-resize pointer-events-auto group relative">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 bg-stone-900/5 group-hover:bg-stone-900/10 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <svg class="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path>
               </svg>
-              <p class="text-[11px] font-semibold text-stone-300">Klik untuk pilih gambar</p>
             </div>
           </div>
-          <div class="md:col-span-8 flex flex-col gap-3">
-            <p class="text-xs text-stone-400" id="bg-image-current-status">Memeriksa gambar background saat ini...</p>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                onclick="saveBgImage()"
-                id="btn-save-bg-image"
-                disabled
-                class="flex-1 py-2.5 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-xl text-xs transition active:scale-95 disabled:bg-stone-800 disabled:text-stone-600"
-              >
-                💾 Simpan Gambar
-              </button>
-              <button
-                type="button"
-                onclick="removeBgImage()"
-                id="btn-remove-bg-image"
-                class="py-2.5 px-4 bg-red-700/80 hover:bg-red-600 text-white font-bold rounded-xl text-xs transition active:scale-95"
-              >
-                🗑️ Hapus Gambar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sub: Pilih Warna/Gradasi Background -->
-      <div class="pt-5 border-t border-stone-700/60">
-        <p class="text-xs font-bold text-stone-300 mb-2">Opsi 2 — Warna / Gradasi Background</p>
-        <p class="text-[11px] text-stone-500 mb-3">Dipakai hanya jika tidak ada gambar background yang tersimpan. Bisa isi warna solid (mis. <code class="text-purple-300">#0c0a09</code>) atau CSS gradient (mis. <code class="text-purple-300">linear-gradient(135deg,#1c1917,#0c0a09)</code>).</p>
-        <div class="flex flex-col md:flex-row gap-3 items-stretch">
-          <input
-            type="color"
-            id="bg-color-picker"
-            value="#1c1917"
-            onchange="document.getElementById('bg-color-input').value = this.value"
-            class="w-14 h-11 bg-stone-900 border border-stone-700 rounded-xl cursor-pointer"
-          />
-          <input
-            type="text"
-            id="bg-color-input"
-            placeholder="Contoh: linear-gradient(135deg, #1c1917, #0c0a09)"
-            class="flex-1 bg-stone-900 border border-stone-700 text-stone-100 placeholder-stone-600 px-4 py-2.5 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-sm font-mono"
-          />
-          <button
-            type="button"
-            onclick="saveBgColor()"
-            id="btn-save-bg-color"
-            class="py-2.5 px-6 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-xl text-xs transition active:scale-95 whitespace-nowrap"
-          >
-            💾 Simpan Warna
-          </button>
-        </div>
-        <p class="text-xs text-stone-400 mt-3" id="bg-color-current-status">Memeriksa warna background saat ini...</p>
-      </div>
-    </section>
-
-    <!-- SECTION LOGO: WATERMARK PUSTAKA -->
-    <section class="bg-gradient-to-br from-stone-850 to-stone-800 border border-blue-500/30 p-6 rounded-2xl shadow-xl mb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-4 border-b border-stone-700/80">
-        <div>
-          <h3 class="font-bold text-lg text-blue-400 font-serif-book flex items-center gap-2">
-            <span>🖼️ Logo Watermark Pustaka</span>
-          </h3>
-          <p class="text-xs text-stone-400 mt-0.5">Unggah logo (disarankan format PNG transparan). Logo akan tampil sebagai watermark transparan di latar belakang halaman buku.</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-        <div class="md:col-span-4 flex flex-col items-center justify-center gap-3 bg-stone-900/60 border-2 border-dashed border-stone-700 rounded-xl p-4 min-h-[140px] relative">
-          <input
-            type="file"
-            id="logo-file-input"
-            accept="image/*"
-            onchange="handleLogoUpload(event)"
-            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-          />
-          <img id="logo-preview" class="hidden max-h-[100px] object-contain" alt="Pratinjau Logo" />
-          <div id="logo-placeholder" class="text-center space-y-1 pointer-events-none">
-            <svg class="w-8 h-8 text-stone-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-            <p class="text-[11px] font-semibold text-stone-300">Klik untuk pilih logo</p>
-          </div>
-        </div>
-
-        <div class="md:col-span-8 flex flex-col gap-3">
-          <p class="text-xs text-stone-400" id="logo-current-status">Memeriksa logo saat ini...</p>
-          <div class="flex gap-2">
-            <button
-              type="button"
-              onclick="saveLogo()"
-              id="btn-save-logo"
-              disabled
-              class="flex-1 py-2.5 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition active:scale-95 disabled:bg-stone-800 disabled:text-stone-600"
-            >
-              💾 Simpan Logo ke Database
-            </button>
-            <button
-              type="button"
-              onclick="removeLogo()"
-              id="btn-remove-logo"
-              class="py-2.5 px-4 bg-red-700/80 hover:bg-red-600 text-white font-bold rounded-xl text-xs transition active:scale-95"
-            >
-              🗑️ Hapus Logo
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 2: SCANNER TEKS OCR -->
-    <section class="bg-gradient-to-br from-stone-850 to-stone-800 border border-blue-700/30 p-6 rounded-2xl shadow-xl mb-8">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-4 border-b border-stone-700/80">
-        <div>
-          <h3 class="font-bold text-lg text-blue-500 font-serif-book flex items-center gap-2">
-            <span>📷 Scanner AI (Teks & Tabel)</span>
-          </h3>
-          <p class="text-xs text-stone-400 mt-0.5">Unggah foto lembaran buku fisik. Pilih mesin pemindai sesuai kebutuhan: teks biasa atau tabel dari gambar.</p>
-        </div>
-      </div>
-
-      <!-- Pilihan Mode Scanner -->
-      <div class="mb-5">
-        <label class="block text-xs font-bold text-stone-300 mb-2">Pilih Mesin Scanner</label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            type="button"
-            id="btn-mode-tesseract"
-            onclick="setScannerMode('tesseract')"
-            class="scanner-mode-btn text-left p-3 rounded-xl border-2 border-blue-700 bg-blue-700/10 transition-all"
-          >
-            <p class="text-xs font-bold text-blue-400">🔤 Tesseract OCR (Teks)</p>
-            <p class="text-[10px] text-stone-400 mt-0.5">Cepat, lokal di perangkat, tanpa API key. Cocok untuk paragraf/teks biasa.</p>
-          </button>
-          <button
-            type="button"
-            id="btn-mode-gemini"
-            onclick="setScannerMode('gemini')"
-            class="scanner-mode-btn text-left p-3 rounded-xl border-2 border-stone-700 bg-stone-900/60 transition-all"
-          >
-            <p class="text-xs font-bold text-amber-400">📊 Gemini AI (Tabel)</p>
-            <p class="text-[10px] text-stone-400 mt-0.5">Menggunakan Gemini 2.5 Pro untuk membaca tabel dari gambar dan mengubahnya menjadi teks/Markdown terstruktur.</p>
-          </button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <!-- Area Pengunggahan Gambar (5 Kolom) -->
-        <div class="md:col-span-5 flex flex-col gap-4">
-          <label class="block text-xs font-bold text-stone-300">Pilih Gambar / Ambil Foto</label>
-          <div class="relative border-2 border-dashed border-stone-700 hover:border-blue-700/50 rounded-xl p-4 flex flex-col items-center justify-center min-h-[200px] transition-all bg-stone-900/60 cursor-pointer">
-            <input 
-              type="file" 
-              id="scanner-file-input" 
-              accept="image/*" 
-              onchange="handleImageUpload(event)"
-              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-            <div id="upload-placeholder" class="text-center space-y-2 pointer-events-none">
-              <svg class="w-10 h-10 text-stone-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          <!-- Ruang tengah dibiarkan kosong (tidak menangkap klik) agar konten bisa di-scroll bebas -->
+          <div class="flex-1 h-full"></div>
+          <!-- Zona Kanan (Maju) -->
+          <div onclick="navNext()" title="Klik bagian kanan untuk Halaman Berikutnya" class="w-[15%] md:w-[18%] h-full cursor-e-resize pointer-events-auto group relative">
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 bg-stone-900/5 group-hover:bg-stone-900/10 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <svg class="w-5 h-5 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path>
               </svg>
-              <p class="text-xs font-semibold text-stone-300">Klik atau seret file gambar ke sini</p>
-              <p class="text-[10px] text-stone-500">Mendukung file PNG, JPG, atau kamera langsung</p>
             </div>
-            <img id="scanner-preview" class="hidden max-h-[190px] object-contain rounded-lg shadow-md z-10" alt="Scanner Preview" />
-          </div>
-
-          <button 
-            type="button" 
-            id="btn-run-scan" 
-            onclick="runScanDispatcher()"
-            disabled
-            class="w-full py-2.5 text-xs font-bold text-white bg-blue-700 rounded-lg hover:bg-blue-500 disabled:bg-stone-800 disabled:text-stone-600 transition-all shadow-md flex items-center justify-center gap-2"
-          >
-            <span id="btn-run-scan-label">✨ Jalankan Ekstraksi Teks (Tesseract)</span>
-          </button>
-
-          <div id="gemini-connect-box" class="hidden text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
-            <span>⚠️ Gemini API belum terhubung. Sambungkan sekali, tersimpan di perangkat ini.</span>
-            <button
-              type="button"
-              onclick="openGeminiConnectModal()"
-              class="shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold rounded-lg text-[10px] transition"
-            >
-              🔑 Hubungkan
-            </button>
-          </div>
-          <div id="gemini-connected-box" class="hidden text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2.5 flex items-center justify-between gap-2">
-            <span>✅ Gemini API terhubung dan siap dipakai.</span>
-            <button
-              type="button"
-              onclick="disconnectGemini()"
-              class="shrink-0 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold rounded-lg text-[10px] transition"
-            >
-              Putuskan
-            </button>
           </div>
         </div>
 
-        <!-- Area Hasil Scan (7 Kolom) -->
-        <div class="md:col-span-7 flex flex-col justify-between gap-3">
-          <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-stone-300" id="scanner-result-label">Hasil Deteksi & Salinan Teks (Tesseract)</label>
-            <button 
-              onclick="copyToContentField()" 
-              id="btn-apply-text"
-              disabled
-              class="text-xs font-bold text-blue-700 hover:text-blue-500 flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none transition"
-            >
-              📥 Gunakan sebagai Isi Halaman Buku
-            </button>
-          </div>
-
-          <div class="relative flex-1">
-            <textarea 
-              id="scanner-result" 
-              placeholder="Hasil scan teks tulisan akan muncul di sini secara otomatis..." 
-              class="w-full h-44 md:h-full bg-stone-900 border border-stone-700 text-stone-300 p-3 rounded-xl text-xs focus:outline-none focus:border-blue-700 resize-none"
-            ></textarea>
-
-            <!-- Loading Spinner Overlay -->
-            <div id="scan-loader" class="absolute inset-0 bg-stone-950/80 rounded-xl hidden items-center justify-center flex-col gap-3">
-              <svg class="animate-spin h-8 w-8 text-blue-700" fill="none" viewBox="0 0 24 24">
+        <!-- AREA KONTEN MATERI UTAMA -->
+        <div class="p-8 md:p-14 z-10 flex-1 flex flex-col justify-between relative overflow-hidden">
+          
+          <div id="page-container" class="page-fade flex-1 overflow-y-auto pr-1 book-scroll relative">
+            <!-- Loading Spinner Sementara Saat Data Diambil -->
+            <div class="flex flex-col items-center justify-center py-32 text-center">
+              <svg class="animate-spin h-8 w-8 text-blue-800 mb-3" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <p id="scan-loader-text" class="text-xs text-blue-500 font-semibold tracking-wide">Menyiapkan mesin OCR...</p>
+              <p class="font-serif-book italic text-stone-600 text-sm">Membuka pustaka buku...</p>
             </div>
           </div>
+
+          <!-- Bagian Kaki Halaman Tunggal -->
+          <div class="mt-6 pt-4 border-t border-stone-200/80 flex justify-between items-center text-[11px] font-bold tracking-wide text-stone-500 shrink-0">
+            <span class="font-header-book text-[9px] uppercase">◀ Klik Kiri</span>
+            <span id="page-number" class="italic">Halaman -</span>
+            <span class="font-header-book text-[9px] uppercase">Klik Kanan ▶</span>
+          </div>
+          
         </div>
+
       </div>
-    </section>
 
-    <!-- SECTION 3: FORM PENULISAN MANUAL & DAFTAR TABEL -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      
-      <!-- FORM INPUT PENULISAN MANUAL (5 KOLOM) -->
-      <section class="lg:col-span-5 bg-stone-800 border border-stone-700/80 p-6 rounded-2xl shadow-lg flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between pb-3 mb-5 border-b border-stone-700">
-            <h3 id="form-title" class="font-bold text-lg text-blue-500 font-serif-book">✨ Buat Lembar Halaman Baru</h3>
-            <button id="btn-reset-form" onclick="resetForm()" class="hidden text-xs px-2.5 py-1 text-blue-700 bg-blue-700/10 hover:bg-blue-700/20 rounded-lg transition font-semibold">
-              Batal Edit
-            </button>
-          </div>
-
-          <form id="admin-form" onsubmit="savePage(event)" class="space-y-4">
-            <input type="hidden" id="form-id">
-            
-            <!-- Nomor Halaman -->
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-stone-300 mb-1">Nomor Urutan Halaman <span class="text-red-500">*</span></label>
-                <input 
-                  type="number" 
-                  id="form-page-number" 
-                  min="1" 
-                  required 
-                  placeholder="Contoh: 1, 2, atau 3" 
-                  class="w-full bg-stone-900 border border-stone-700 text-stone-200 placeholder-stone-600 px-3 py-2 rounded-xl focus:outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 text-sm"
-                />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-stone-300 mb-1">Format Tampilan</label>
-                <select
-                  id="form-number-format"
-                  class="w-full bg-stone-900 border border-stone-700 text-stone-200 px-3 py-2 rounded-xl focus:outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 text-sm"
-                >
-                  <option value="numeric">Angka (1, 2, 3)</option>
-                  <option value="roman">Romawi (I, II, III)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Judul Bab -->
-            <div>
-              <label class="block text-xs font-bold text-stone-300 mb-1">Judul Bab / Subjudul <span class="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                id="form-title-input" 
-                required 
-                placeholder="Tuliskan judul bab baru..." 
-                class="w-full bg-stone-900 border border-stone-700 text-stone-200 placeholder-stone-600 px-3 py-2 rounded-xl focus:outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 text-sm"
-              />
-            </div>
-
-            <!-- Isi Konten Buku -->
-            <div>
-              <label class="block text-xs font-bold text-stone-300 mb-1">Isi Halaman (Materi Buku) <span class="text-red-500">*</span></label>
-              <textarea 
-                id="form-content" 
-                rows="10" 
-                required 
-                placeholder="Tulis materi buku di sini..." 
-                class="w-full bg-stone-900 border border-stone-700 text-stone-200 placeholder-stone-600 px-3 py-2 rounded-xl focus:outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 text-sm"
-              ></textarea>
-            </div>
-
-            <button type="submit" id="btn-submit-form" class="w-full py-3 mt-4 text-sm font-bold bg-blue-800 text-white rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-md">
-              Tambahkan Lembaran Buku
-            </button>
-          </form>
-        </div>
-      </section>
-
-      <!-- TABEL MANAJEMEN URUTAN DATA (7 KOLOM) -->
-      <section class="lg:col-span-7 bg-stone-800 border border-stone-700/80 p-6 rounded-2xl shadow-lg flex flex-col justify-between">
-        <div>
-          <div class="mb-4">
-            <h3 class="font-bold text-lg text-blue-500 font-serif-book">📚 Manajer Lembaran Buku</h3>
-            <p class="text-xs text-stone-400 mt-0.5">Semua perubahan di tabel ini langsung disimpan ke database Supabase secara otomatis.</p>
-          </div>
-
-          <!-- List Tabel Konten Halaman -->
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr class="border-b border-stone-700 bg-stone-900/40 text-stone-300">
-                  <th class="py-3 px-3 text-center w-16">Halaman</th>
-                  <th class="py-3 px-3">Judul Halaman</th>
-                  <th class="py-3 px-3 hidden sm:table-cell">Potongan Isi</th>
-                  <th class="py-3 px-3 text-right w-24">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="admin-table-body" class="divide-y divide-stone-700/50">
-                <!-- Data Diisi secara Dinamis oleh JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
+      <!-- STATUS MEMBACA YANG DISEDERHANAKAN -->
+      <div class="text-center mt-3 shrink-0">
+        <span id="book-progress-info" class="text-xs font-semibold text-stone-400 tracking-wider">
+          Menghubungkan ke Supabase...
+        </span>
+      </div>
     </div>
 
   </main>
-
-  <!-- ================= FOOTER ================= -->
-  <footer class="bg-stone-950 border-t border-stone-800 py-6 text-center text-xs text-stone-500">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p>© 2026 Pustaka Buku Fisik Klasik. Panel Pengawas.</p>
-      <p class="text-blue-700/60 font-medium font-mono">Buku Klasik - Cloud Sync v3.0</p>
-    </div>
-  </footer>
 
   <script>
     // ================= KONFIGURASI SUPABASE =================
@@ -541,8 +274,7 @@
       "Content-Type": "application/json"
     };
 
-    // Data Buku Default (harus identik dengan index.html agar konsisten
-    // saat localStorage masih kosong / pertama kali dibuka)
+    // Data Buku Default (Pre-seeded jika cloud belum di-setup)
     let defaultPages = [
       {
         id: "p1",
@@ -564,26 +296,41 @@
       }
     ];
 
-    let pages = [];
-    let idHalamanYangAkanDihapus = null;
-    let selectedImageBase64 = null;
-    let selectedLogoBase64 = null;
+    let pages = [...defaultPages];
+    let currentPageIndex = 0;
+    let searchQuery = "";
 
-    // ================= KONFIGURASI SCANNER GEMINI (TABEL) =================
-    const GEMINI_MODEL = "gemini-2.5-pro";
-    const GEMINI_KEY_STORAGE_NAME = "gemini_api_key_pustaka"; // key disimpan di localStorage perangkat ini
-
-    function getGeminiApiKey() {
-      return localStorage.getItem(GEMINI_KEY_STORAGE_NAME) || "";
+    // ================= GERBANG LANDING (JUDUL + TOMBOL BUKA) =================
+    function openBook() {
+      const landing = document.getElementById('landing-screen');
+      landing.style.opacity = '0';
+      landing.style.transition = 'opacity 0.35s ease';
+      setTimeout(() => {
+        landing.classList.add('hidden');
+      }, 350);
     }
 
-    function getGeminiApiUrl() {
-      const key = getGeminiApiKey();
-      return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+    // ================= MODAL PENCARIAN =================
+    function openSearchModal() {
+      const modal = document.getElementById('search-modal-backdrop');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('search-input').focus(), 50);
     }
 
-    // Mode scanner aktif: 'tesseract' (teks) atau 'gemini' (tabel)
-    let activeScannerMode = 'tesseract';
+    function closeSearchModal() {
+      const modal = document.getElementById('search-modal-backdrop');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSearchModal();
+    });
+
+    document.getElementById('search-modal-backdrop').addEventListener('click', (e) => {
+      if (e.target.id === 'search-modal-backdrop') closeSearchModal();
+    });
 
     // Konversi angka ke format Romawi (mendukung 1 - 3999)
     function toRoman(num) {
@@ -608,9 +355,110 @@
       return numberFormat === 'roman' ? toRoman(pageNumber) : String(pageNumber);
     }
 
-    // Memuat data awal dari Supabase (dipakai saat window.onload)
-    async function loadPagesFromSupabase() {
-      const badge = document.getElementById('supabase-status-badge');
+    // Menandai status sinkron: warna judul + toast notifikasi sebentar
+    let syncToastTimeout = null;
+    function setSyncStatus(isSynced, message, isError = false) {
+      const titleEl = document.getElementById('book-title-display');
+      if (isSynced) {
+        titleEl.classList.remove('title-unsynced');
+        titleEl.classList.add('title-synced');
+      } else {
+        titleEl.classList.remove('title-synced');
+        titleEl.classList.add('title-unsynced');
+      }
+
+      const toast = document.getElementById('sync-toast');
+      const dot = document.getElementById('sync-toast-dot');
+      const text = document.getElementById('sync-toast-text');
+
+      text.textContent = message;
+      dot.className = `w-2 h-2 rounded-full ${isSynced ? 'bg-emerald-500' : isError ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`;
+
+      toast.classList.add('show');
+      clearTimeout(syncToastTimeout);
+      syncToastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2800);
+    }
+
+    // Memuat Periode Buku (mis. "2025-2027") dari Supabase
+    async function fetchBookPeriod() {
+      try {
+        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.book_period`, {
+          method: "GET",
+          headers: SUPABASE_HEADERS
+        });
+        if (!response.ok) throw new Error("Gagal mengambil periode buku");
+
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].value) {
+          document.getElementById('book-period-display').textContent = data[0].value;
+          localStorage.setItem('pustaka_klasik_period', data[0].value);
+        }
+      } catch (error) {
+        console.warn("Periode buku tidak dapat dimuat, menggunakan cache lokal:", error);
+        const cached = localStorage.getItem('pustaka_klasik_period');
+        if (cached) {
+          document.getElementById('book-period-display').textContent = cached;
+        }
+      }
+    }
+
+    // Memuat Background Landing (gambar atau warna/gradasi) dari Supabase
+    async function fetchLandingBackground() {
+      try {
+        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=key,value&key=in.(landing_bg_image,landing_bg_color)`, {
+          method: "GET",
+          headers: SUPABASE_HEADERS
+        });
+        if (!response.ok) throw new Error("Gagal mengambil background landing");
+
+        const data = await response.json();
+        const landing = document.getElementById('landing-screen');
+        const bgImage = (data || []).find(d => d.key === 'landing_bg_image')?.value;
+        const bgColor = (data || []).find(d => d.key === 'landing_bg_color')?.value;
+
+        if (bgImage) {
+          landing.style.background = `url("${bgImage}")`;
+          landing.style.backgroundSize = 'cover';
+          landing.style.backgroundPosition = 'center';
+          landing.classList.add('has-bg-image');
+        } else if (bgColor) {
+          landing.style.background = bgColor;
+          landing.classList.remove('has-bg-image');
+        }
+      } catch (error) {
+        console.warn("Background landing tidak tersedia, memakai default:", error);
+      }
+    }
+
+    // Memuat Judul Buku dari Supabase (hanya bisa diedit lewat admin.html)
+    async function fetchBookTitle() {
+      try {
+        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.book_title`, {
+          method: "GET",
+          headers: SUPABASE_HEADERS
+        });
+        if (!response.ok) throw new Error("Gagal mengambil judul buku");
+
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].value) {
+          document.getElementById('book-title-display').textContent = data[0].value;
+          localStorage.setItem('pustaka_klasik_title', data[0].value);
+        }
+      } catch (error) {
+        console.warn("Judul buku tidak dapat dimuat, menggunakan judul lokal/cache:", error);
+        const cachedTitle = localStorage.getItem('pustaka_klasik_title');
+        if (cachedTitle) {
+          document.getElementById('book-title-display').textContent = cachedTitle;
+        }
+      }
+    }
+
+    // Memuat Data dari Supabase
+    async function fetchBookFromCloud() {
+      setSyncStatus(false, "Menghubungkan ke Supabase...");
+
       try {
         const response = await fetch(`${SUPABASE_TABLE_URL}?select=*&order=page_number.asc`, {
           method: "GET",
@@ -619,922 +467,164 @@
         if (!response.ok) throw new Error("Gagal mengambil data dari Supabase");
 
         const data = await response.json();
-        pages = (data || []).map(item => ({
-          id: item.id,
-          pageNumber: Number(item.page_number),
-          title: item.title || 'Tanpa Judul',
-          content: item.content || '',
-          numberFormat: item.number_format || 'numeric'
-        }));
+        if (Array.isArray(data) && data.length > 0) {
+          pages = data.map(item => ({
+            id: item.id,
+            pageNumber: Number(item.page_number),
+            title: item.title || 'Tanpa Judul',
+            content: item.content || '',
+            numberFormat: item.number_format || 'numeric'
+          }));
+          // Sinkronisasikan juga ke lokal sebagai cache cadangan (mode offline)
+          localStorage.setItem('pustaka_klasik_pages', JSON.stringify(pages));
 
-        if (pages.length === 0) {
-          badge.textContent = "Terhubung, Kosong";
-          badge.className = "text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-sans tracking-wide uppercase";
+          setSyncStatus(true, "Sinkron dengan Supabase");
         } else {
-          badge.textContent = "Terhubung";
-          badge.className = "text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-sans tracking-wide uppercase";
+          setSyncStatus(false, "Koneksi OK, Database Kosong");
+          pages = [];
         }
       } catch (error) {
-        console.error("Gagal terhubung ke Supabase:", error);
-        badge.textContent = "Gagal Terhubung";
-        badge.className = "text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-sans tracking-wide uppercase";
-        showToast('Gagal terhubung ke Supabase. Periksa koneksi internet Anda.', true);
-        pages = [];
-      }
-
-      renderAdminTable();
-      resetForm();
-    }
-
-    // ================= JUDUL & PERIODE BUKU =================
-
-    // Memuat judul & periode buku saat ini dari Supabase (dipanggil saat window.onload)
-    async function loadBookTitleStatus() {
-      const statusEl = document.getElementById('title-current-status');
-      const periodStatusEl = document.getElementById('period-current-status');
-      const inputEl = document.getElementById('book-title-input');
-      const periodInputEl = document.getElementById('book-period-input');
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=key,value&key=in.(book_title,book_period)`, {
-          method: "GET",
-          headers: SUPABASE_HEADERS
-        });
-        if (!response.ok) throw new Error("Gagal mengambil judul/periode buku");
-
-        const data = await response.json();
-        const titleVal = (data || []).find(d => d.key === 'book_title')?.value;
-        const periodVal = (data || []).find(d => d.key === 'book_period')?.value;
-
-        if (titleVal) {
-          inputEl.value = titleVal;
-          statusEl.textContent = `✅ Judul saat ini: "${titleVal}"`;
-        } else {
-          statusEl.textContent = "Belum ada judul tersimpan. Buku akan memakai judul bawaan.";
+        console.error("Gagal mengambil data dari Supabase, menggunakan data lokal:", error);
+        // Fallback ke data lokal jika koneksi internet terputus
+        const localData = localStorage.getItem('pustaka_klasik_pages');
+        if (localData) {
+          try {
+            pages = JSON.parse(localData);
+          } catch (e) {
+            pages = [...defaultPages];
+          }
         }
-
-        if (periodVal) {
-          periodInputEl.value = periodVal;
-          periodStatusEl.textContent = `✅ Periode saat ini: "${periodVal}"`;
-        } else {
-          periodStatusEl.textContent = "Belum ada periode tersimpan.";
-        }
-      } catch (error) {
-        console.error("Gagal memuat judul/periode buku:", error);
-        statusEl.textContent = "Gagal memeriksa judul dari Supabase.";
-        periodStatusEl.textContent = "Gagal memeriksa periode dari Supabase.";
-      }
-    }
-
-    async function saveBookTitle() {
-      const inputEl = document.getElementById('book-title-input');
-      const periodInputEl = document.getElementById('book-period-input');
-      const newTitle = inputEl.value.trim();
-      const newPeriod = periodInputEl.value.trim();
-
-      if (!newTitle) {
-        showToast('Judul buku tidak boleh kosong!', true);
-        return;
+        setSyncStatus(false, "Koneksi Gagal (Memuat Cache Lokal)", true);
       }
 
-      const btn = document.getElementById('btn-save-title');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "⏳ Menyimpan...";
-
-      try {
-        const rows = [{ key: "book_title", value: newTitle }];
-        if (newPeriod) rows.push({ key: "book_period", value: newPeriod });
-
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?on_conflict=key`, {
-          method: "POST",
-          headers: {
-            ...SUPABASE_HEADERS,
-            "Prefer": "resolution=merge-duplicates,return=representation"
-          },
-          body: JSON.stringify(rows)
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        showToast('Judul & periode buku berhasil disimpan!');
-        document.getElementById('title-current-status').textContent = `✅ Judul saat ini: "${newTitle}"`;
-        if (newPeriod) {
-          document.getElementById('period-current-status').textContent = `✅ Periode saat ini: "${newPeriod}"`;
-        }
-      } catch (error) {
-        console.error("Gagal menyimpan judul/periode buku ke Supabase:", error);
-        showToast('Gagal menyimpan ke Supabase.', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-
-    // ================= BACKGROUND LAYAR SAMBUTAN (LANDING) =================
-    let selectedBgImageBase64 = null;
-
-    // -- Sub 1: Gambar Background --
-    async function handleBgImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      try {
-        selectedBgImageBase64 = await resizeImageToBase64(file, 1600);
-
-        const img = document.getElementById('bg-image-preview');
-        img.src = selectedBgImageBase64;
-        img.classList.remove('hidden');
-        document.getElementById('bg-image-placeholder').classList.add('hidden');
-        document.getElementById('btn-save-bg-image').disabled = false;
-      } catch (error) {
-        console.error("Gagal memproses gambar background:", error);
-        showToast('Gagal memproses gambar background.', true);
-      }
-    }
-
-    async function loadBgImageStatus() {
-      const statusEl = document.getElementById('bg-image-current-status');
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.landing_bg_image`, {
-          method: "GET",
-          headers: SUPABASE_HEADERS
-        });
-        if (!response.ok) throw new Error("Gagal mengambil gambar background");
-
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0 && data[0].value) {
-          statusEl.textContent = "✅ Gambar background sudah terpasang (diprioritaskan di atas warna).";
-          const img = document.getElementById('bg-image-preview');
-          img.src = data[0].value;
-          img.classList.remove('hidden');
-          document.getElementById('bg-image-placeholder').classList.add('hidden');
-        } else {
-          statusEl.textContent = "Belum ada gambar background. Layar sambutan memakai warna/gradasi.";
-        }
-      } catch (error) {
-        console.error("Gagal memuat status gambar background:", error);
-        statusEl.textContent = "Gagal memeriksa gambar background dari Supabase.";
-      }
-    }
-
-    async function saveBgImage() {
-      if (!selectedBgImageBase64) {
-        showToast('Pilih gambar terlebih dahulu!', true);
-        return;
-      }
-
-      const btn = document.getElementById('btn-save-bg-image');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "⏳ Menyimpan...";
-
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?on_conflict=key`, {
-          method: "POST",
-          headers: {
-            ...SUPABASE_HEADERS,
-            "Prefer": "resolution=merge-duplicates,return=representation"
-          },
-          body: JSON.stringify({ key: "landing_bg_image", value: selectedBgImageBase64 })
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        showToast('Gambar background berhasil disimpan!');
-        document.getElementById('bg-image-current-status').textContent = "✅ Gambar background sudah terpasang (diprioritaskan di atas warna).";
-      } catch (error) {
-        console.error("Gagal menyimpan gambar background ke Supabase:", error);
-        showToast('Gagal menyimpan gambar background.', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-
-    async function removeBgImage() {
-      const btn = document.getElementById('btn-remove-bg-image');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "⏳ Menghapus...";
-
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?key=eq.landing_bg_image`, {
-          method: "DELETE",
-          headers: SUPABASE_HEADERS
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        selectedBgImageBase64 = null;
-        document.getElementById('bg-image-preview').classList.add('hidden');
-        document.getElementById('bg-image-placeholder').classList.remove('hidden');
-        document.getElementById('bg-image-file-input').value = "";
-        document.getElementById('btn-save-bg-image').disabled = true;
-        document.getElementById('bg-image-current-status').textContent = "Belum ada gambar background. Layar sambutan memakai warna/gradasi.";
-        showToast('Gambar background berhasil dihapus.');
-      } catch (error) {
-        console.error("Gagal menghapus gambar background dari Supabase:", error);
-        showToast('Gagal menghapus gambar background.', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-
-    // -- Sub 2: Warna / Gradasi Background --
-    async function loadBgColorStatus() {
-      const statusEl = document.getElementById('bg-color-current-status');
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.landing_bg_color`, {
-          method: "GET",
-          headers: SUPABASE_HEADERS
-        });
-        if (!response.ok) throw new Error("Gagal mengambil warna background");
-
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0 && data[0].value) {
-          document.getElementById('bg-color-input').value = data[0].value;
-          statusEl.textContent = `✅ Warna/gradasi saat ini: "${data[0].value}"`;
-        } else {
-          statusEl.textContent = "Belum ada warna kustom. Memakai gradasi bawaan.";
-        }
-      } catch (error) {
-        console.error("Gagal memuat status warna background:", error);
-        statusEl.textContent = "Gagal memeriksa warna background dari Supabase.";
-      }
-    }
-
-    async function saveBgColor() {
-      const inputEl = document.getElementById('bg-color-input');
-      const newColor = inputEl.value.trim();
-
-      if (!newColor) {
-        showToast('Isi warna atau gradasi terlebih dahulu!', true);
-        return;
-      }
-
-      const btn = document.getElementById('btn-save-bg-color');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "⏳ Menyimpan...";
-
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?on_conflict=key`, {
-          method: "POST",
-          headers: {
-            ...SUPABASE_HEADERS,
-            "Prefer": "resolution=merge-duplicates,return=representation"
-          },
-          body: JSON.stringify({ key: "landing_bg_color", value: newColor })
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        showToast('Warna background berhasil disimpan!');
-        document.getElementById('bg-color-current-status').textContent = `✅ Warna/gradasi saat ini: "${newColor}"`;
-      } catch (error) {
-        console.error("Gagal menyimpan warna background ke Supabase:", error);
-        showToast('Gagal menyimpan warna background.', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-
-    // ================= LOGO WATERMARK =================
-
-
-    // Mengubah gambar menjadi base64 dengan resize otomatis (maks 500px)
-    // supaya ukuran data tetap ringan saat disimpan di database.
-    function resizeImageToBase64(file, maxWidth = 500) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            let { width, height } = img;
-            if (width > maxWidth) {
-              height = Math.round(height * (maxWidth / width));
-              width = maxWidth;
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/png'));
-          };
-          img.onerror = reject;
-          img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function handleLogoUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      try {
-        selectedLogoBase64 = await resizeImageToBase64(file, 500);
-
-        const img = document.getElementById('logo-preview');
-        img.src = selectedLogoBase64;
-        img.classList.remove('hidden');
-        document.getElementById('logo-placeholder').classList.add('hidden');
-        document.getElementById('btn-save-logo').disabled = false;
-      } catch (error) {
-        console.error("Gagal memproses gambar logo:", error);
-        showToast('Gagal memproses gambar logo.', true);
-      }
-    }
-
-    // Memuat status logo saat ini dari Supabase (dipanggil saat window.onload)
-    async function loadLogoStatus() {
-      const statusEl = document.getElementById('logo-current-status');
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.logo`, {
-          method: "GET",
-          headers: SUPABASE_HEADERS
-        });
-        if (!response.ok) throw new Error("Gagal mengambil data logo");
-
-        const data = await response.json();
-        if (Array.isArray(data) && data.length > 0 && data[0].value) {
-          statusEl.textContent = "✅ Logo watermark sudah terpasang di buku.";
-          const img = document.getElementById('logo-preview');
-          img.src = data[0].value;
-          img.classList.remove('hidden');
-          document.getElementById('logo-placeholder').classList.add('hidden');
-        } else {
-          statusEl.textContent = "Belum ada logo watermark yang terpasang.";
-        }
-      } catch (error) {
-        console.error("Gagal memuat status logo:", error);
-        statusEl.textContent = "Gagal memeriksa status logo dari Supabase.";
-      }
-    }
-
-    async function saveLogo() {
-      if (!selectedLogoBase64) {
-        showToast('Pilih gambar logo terlebih dahulu!', true);
-        return;
-      }
-
-      const btn = document.getElementById('btn-save-logo');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "⏳ Menyimpan...";
-
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?on_conflict=key`, {
-          method: "POST",
-          headers: {
-            ...SUPABASE_HEADERS,
-            "Prefer": "resolution=merge-duplicates,return=representation"
-          },
-          body: JSON.stringify({ key: "logo", value: selectedLogoBase64 })
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        showToast('Logo watermark berhasil disimpan!');
-        document.getElementById('logo-current-status').textContent = "✅ Logo watermark sudah terpasang di buku.";
-      } catch (error) {
-        console.error("Gagal menyimpan logo ke Supabase:", error);
-        showToast('Gagal menyimpan logo ke Supabase.', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-
-    async function removeLogo() {
-      const btn = document.getElementById('btn-remove-logo');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "⏳ Menghapus...";
-
-      try {
-        const response = await fetch(`${SUPABASE_SETTINGS_URL}?key=eq.logo`, {
-          method: "DELETE",
-          headers: SUPABASE_HEADERS
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        selectedLogoBase64 = null;
-        document.getElementById('logo-preview').classList.add('hidden');
-        document.getElementById('logo-placeholder').classList.remove('hidden');
-        document.getElementById('logo-file-input').value = "";
-        document.getElementById('btn-save-logo').disabled = true;
-        document.getElementById('logo-current-status').textContent = "Belum ada logo watermark yang terpasang.";
-        showToast('Logo watermark berhasil dihapus.');
-      } catch (error) {
-        console.error("Gagal menghapus logo dari Supabase:", error);
-        showToast('Gagal menghapus logo dari Supabase.', true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
-
-    function showToast(message, isError = false) {
-      const toast = document.getElementById('toast-notif');
-      const msgSpan = document.getElementById('toast-message');
-      const iconSpan = document.getElementById('toast-icon');
-
-      msgSpan.textContent = message;
-      iconSpan.textContent = isError ? '⚠️' : '✨';
-
-      if (isError) {
-        toast.className = "fixed top-24 right-4 z-50 transform transition-all duration-300 bg-red-600 text-white px-5 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2 border border-red-500 opacity-100 translate-x-0";
-      } else {
-        toast.className = "fixed top-24 right-4 z-50 transform transition-all duration-300 bg-blue-700 text-white px-5 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2 border border-blue-500 opacity-100 translate-x-0";
-      }
-
-      setTimeout(() => {
-        toast.className = "fixed top-24 right-4 z-50 transform translate-x-96 opacity-0 transition-all duration-300 bg-blue-700 text-white px-5 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2 border border-blue-500";
-      }, 3000);
+      renderBook();
     }
 
     function getSortedPages() {
       return [...pages].sort((a, b) => Number(a.pageNumber) - Number(b.pageNumber));
     }
 
-    function renderAdminTable() {
+    function getFilteredPages() {
       const sorted = getSortedPages();
-      const tbody = document.getElementById('admin-table-body');
-      tbody.innerHTML = "";
-
-      if (sorted.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colSpan="4" class="py-8 text-center text-stone-500 italic">Belum ada halaman yang terdaftar di buku ini.</td>
-          </tr>
-        `;
-        return;
-      }
-
-      sorted.forEach((p) => {
-        const truncatedContent = p.content.length > 55 ? p.content.slice(0, 55) + "..." : p.content;
-
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-stone-700/30 transition-colors";
-        tr.innerHTML = `
-          <td class="py-3 px-3 text-center font-bold text-blue-700 bg-stone-900/10">${formatPageNumber(p.pageNumber, p.numberFormat)}</td>
-          <td class="py-3 px-3">
-            <span class="font-semibold text-stone-100 font-serif-book block">${p.title}</span>
-          </td>
-          <td class="py-3 px-3 text-stone-400 text-xs hidden sm:table-cell">${truncatedContent}</td>
-          <td class="py-3 px-3 text-right">
-            <div class="flex items-center justify-end gap-1.5">
-              <button 
-                onclick='editPage(${JSON.stringify(p.id)})' 
-                title="Edit Lembar Halaman"
-                class="p-2 hover:bg-blue-700/10 text-blue-700 rounded-lg transition"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-              </button>
-              <button 
-                onclick="openDeleteModal('${p.id}')" 
-                title="Hapus Lembar Halaman"
-                class="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function savePage(e) {
-      e.preventDefault();
-
-      const formId = document.getElementById('form-id').value;
-      const pageNumber = Number(document.getElementById('form-page-number').value);
-      const title = document.getElementById('form-title-input').value.trim();
-      const content = document.getElementById('form-content').value.trim();
-      const numberFormat = document.getElementById('form-number-format').value;
-
-      if (!pageNumber || !title || !content) {
-        showToast('Mohon isi semua field wajib!', true);
-        return;
-      }
-
-      const submitBtn = document.getElementById('btn-submit-form');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = "⏳ Menyimpan...";
-
-      try {
-        if (formId) {
-          const isDuplicate = pages.some(p => p.pageNumber === pageNumber && p.id !== formId);
-          if (isDuplicate) {
-            showToast(`Nomor halaman ${pageNumber} sudah digunakan!`, true);
-            return;
-          }
-
-          // UPDATE ke Supabase
-          const response = await fetch(`${SUPABASE_TABLE_URL}?id=eq.${formId}`, {
-            method: "PATCH",
-            headers: { ...SUPABASE_HEADERS, "Prefer": "return=representation" },
-            body: JSON.stringify({ page_number: pageNumber, title, content, number_format: numberFormat })
-          });
-          if (!response.ok) throw new Error(await response.text());
-
-          pages = pages.map(p => p.id === formId ? { ...p, pageNumber, title, content, numberFormat } : p);
-          showToast('Halaman berhasil diperbarui di Supabase!');
-        } else {
-          const isDuplicate = pages.some(p => p.pageNumber === pageNumber);
-          if (isDuplicate) {
-            showToast(`Nomor halaman ${pageNumber} sudah digunakan!`, true);
-            return;
-          }
-
-          const newId = 'p-' + Date.now();
-
-          // INSERT ke Supabase
-          const response = await fetch(SUPABASE_TABLE_URL, {
-            method: "POST",
-            headers: { ...SUPABASE_HEADERS, "Prefer": "return=representation" },
-            body: JSON.stringify({ id: newId, page_number: pageNumber, title, content, number_format: numberFormat })
-          });
-          if (!response.ok) throw new Error(await response.text());
-
-          pages.push({ id: newId, pageNumber, title, content, numberFormat });
-          showToast('Materi berhasil ditambahkan ke Supabase!');
-        }
-
-        resetForm();
-        renderAdminTable();
-      } catch (error) {
-        console.error("Gagal menyimpan ke Supabase:", error);
-        showToast('Gagal menyimpan ke Supabase. Periksa koneksi Anda.', true);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    }
-
-    function editPage(id) {
-      const found = pages.find(p => p.id === id);
-      if (!found) return;
-
-      document.getElementById('form-id').value = found.id;
-      document.getElementById('form-page-number').value = found.pageNumber;
-      document.getElementById('form-title-input').value = found.title;
-      document.getElementById('form-content').value = found.content;
-      document.getElementById('form-number-format').value = found.numberFormat || 'numeric';
-
-      document.getElementById('form-title').textContent = "📝 Edit Data Halaman";
-      document.getElementById('btn-submit-form').textContent = "Simpan Perubahan";
-      document.getElementById('btn-reset-form').classList.remove('hidden');
-
-      document.getElementById('admin-form').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function resetForm() {
-      document.getElementById('form-id').value = "";
-      document.getElementById('form-title-input').value = "";
-      document.getElementById('form-content').value = "";
-      document.getElementById('form-number-format').value = "numeric";
+      if (!searchQuery.trim()) return sorted;
       
-      const sorted = getSortedPages();
-      const nextNum = sorted.length > 0 ? Math.max(...sorted.map(p => Number(p.pageNumber))) + 1 : 1;
-      document.getElementById('form-page-number').value = nextNum;
-
-      document.getElementById('form-title').textContent = "✨ Buat Lembar Halaman Baru";
-      document.getElementById('btn-submit-form').textContent = "Tambahkan Lembaran Buku";
-      document.getElementById('btn-reset-form').classList.add('hidden');
+      return sorted.filter(p => 
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        p.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.pageNumber.toString() === searchQuery.trim()
+      );
     }
 
-    function openDeleteModal(id) {
-      idHalamanYangAkanDihapus = id;
-      const modal = document.getElementById('delete-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+    function renderBook() {
+      const listHalaman = getFilteredPages();
+      
+      const container = document.getElementById('page-container');
+      const pageNumSpan = document.getElementById('page-number');
+      const progressSpan = document.getElementById('book-progress-info');
 
-      document.getElementById('confirm-delete-btn').onclick = async function() {
-        if (!idHalamanYangAkanDihapus) return;
-
-        const confirmBtn = document.getElementById('confirm-delete-btn');
-        const originalText = confirmBtn.textContent;
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = "Menghapus...";
-
-        try {
-          const response = await fetch(`${SUPABASE_TABLE_URL}?id=eq.${idHalamanYangAkanDihapus}`, {
-            method: "DELETE",
-            headers: SUPABASE_HEADERS
-          });
-          if (!response.ok) throw new Error(await response.text());
-
-          pages = pages.filter(p => p.id !== idHalamanYangAkanDihapus);
-          showToast('Halaman berhasil dihapus dari Supabase.');
-          closeDeleteModal();
-          renderAdminTable();
-        } catch (error) {
-          console.error("Gagal menghapus dari Supabase:", error);
-          showToast('Gagal menghapus dari Supabase. Periksa koneksi Anda.', true);
-        } finally {
-          confirmBtn.disabled = false;
-          confirmBtn.textContent = originalText;
-        }
-      };
-    }
-
-    function closeDeleteModal() {
-      idHalamanYangAkanDihapus = null;
-      const modal = document.getElementById('delete-modal');
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-    }
-
-    // ================= SCANNER TEKS & TABEL AI (OCR GANDA) =================
-    function handleImageUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        selectedImageBase64 = e.target.result;
-        
-        const img = document.getElementById('scanner-preview');
-        img.src = selectedImageBase64;
-        img.classList.remove('hidden');
-        
-        document.getElementById('upload-placeholder').classList.add('hidden');
-        document.getElementById('btn-run-scan').disabled = false;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // Mengganti mesin scanner aktif antara Tesseract (teks) dan Gemini (tabel)
-    function setScannerMode(mode) {
-      activeScannerMode = mode;
-
-      const btnTess = document.getElementById('btn-mode-tesseract');
-      const btnGemini = document.getElementById('btn-mode-gemini');
-      const btnLabel = document.getElementById('btn-run-scan-label');
-      const resultLabel = document.getElementById('scanner-result-label');
-      const connectBox = document.getElementById('gemini-connect-box');
-      const connectedBox = document.getElementById('gemini-connected-box');
-
-      if (mode === 'tesseract') {
-        btnTess.classList.add('border-blue-700', 'bg-blue-700/10');
-        btnTess.classList.remove('border-stone-700', 'bg-stone-900/60');
-        btnGemini.classList.remove('border-amber-500', 'bg-amber-500/10');
-        btnGemini.classList.add('border-stone-700', 'bg-stone-900/60');
-
-        btnLabel.textContent = "✨ Jalankan Ekstraksi Teks (Tesseract)";
-        resultLabel.textContent = "Hasil Deteksi & Salinan Teks (Tesseract)";
-        connectBox.classList.add('hidden');
-        connectedBox.classList.add('hidden');
-      } else {
-        btnGemini.classList.add('border-amber-500', 'bg-amber-500/10');
-        btnGemini.classList.remove('border-stone-700', 'bg-stone-900/60');
-        btnTess.classList.remove('border-blue-700', 'bg-blue-700/10');
-        btnTess.classList.add('border-stone-700', 'bg-stone-900/60');
-
-        btnLabel.textContent = "📊 Jalankan Pemindaian Tabel (Gemini)";
-        resultLabel.textContent = "Hasil Pemindaian Tabel (Gemini)";
-
-        refreshGeminiConnectionUI();
+      if (currentPageIndex >= listHalaman.length) {
+        currentPageIndex = Math.max(0, listHalaman.length - 1);
       }
-    }
-
-    // Menampilkan status koneksi Gemini (terhubung / belum) sesuai localStorage
-    function refreshGeminiConnectionUI() {
-      const connectBox = document.getElementById('gemini-connect-box');
-      const connectedBox = document.getElementById('gemini-connected-box');
-      const hasKey = !!getGeminiApiKey();
-
-      if (activeScannerMode !== 'gemini') return;
-
-      if (hasKey) {
-        connectBox.classList.add('hidden');
-        connectedBox.classList.remove('hidden');
-      } else {
-        connectedBox.classList.add('hidden');
-        connectBox.classList.remove('hidden');
+      if (currentPageIndex < 0) {
+        currentPageIndex = 0;
       }
-    }
 
-    // --- Modal Hubungkan Gemini ---
-    function openGeminiConnectModal() {
-      const modal = document.getElementById('gemini-connect-modal');
-      document.getElementById('gemini-key-input').value = getGeminiApiKey();
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeGeminiConnectModal() {
-      const modal = document.getElementById('gemini-connect-modal');
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-    }
-
-    function toggleGeminiKeyVisibility() {
-      const input = document.getElementById('gemini-key-input');
-      const btn = document.getElementById('btn-toggle-key-visibility');
-      if (input.type === 'password') {
-        input.type = 'text';
-        btn.textContent = "🙈 Sembunyikan key";
-      } else {
-        input.type = 'password';
-        btn.textContent = "👁️ Tampilkan key";
-      }
-    }
-
-    function saveGeminiKey() {
-      const key = document.getElementById('gemini-key-input').value.trim();
-      if (!key) {
-        showToast('Isi API key terlebih dahulu.', true);
-        return;
-      }
-      localStorage.setItem(GEMINI_KEY_STORAGE_NAME, key);
-      closeGeminiConnectModal();
-      refreshGeminiConnectionUI();
-      showToast('Gemini API berhasil terhubung!');
-    }
-
-    function disconnectGemini() {
-      localStorage.removeItem(GEMINI_KEY_STORAGE_NAME);
-      refreshGeminiConnectionUI();
-      showToast('Koneksi Gemini API diputuskan.');
-    }
-
-    // Dispatcher: menjalankan scanner sesuai mode yang sedang dipilih
-    function runScanDispatcher() {
-      if (activeScannerMode === 'gemini') {
-        runGeminiTableScanner();
-      } else {
-        runTesseractScanner();
-      }
-    }
-
-    // --- MESIN 1: Tesseract OCR (teks biasa, lokal, tanpa API key) ---
-    async function runTesseractScanner() {
-      if (!selectedImageBase64) {
-        showToast('Unggah foto terlebih dahulu!', true);
+      if (listHalaman.length === 0) {
+        container.innerHTML = `
+          <div class="py-20 text-center">
+            <p class="font-serif-book italic text-stone-400">Tidak ada halaman yang cocok atau buku masih kosong.</p>
+            <p class="text-xs text-stone-500 mt-2">Buka admin.html untuk mengisi buku.</p>
+          </div>
+        `;
+        pageNumSpan.textContent = "-";
+        progressSpan.textContent = "Buku Kosong";
         return;
       }
 
-      const loader = document.getElementById('scan-loader');
-      const loaderText = document.getElementById('scan-loader-text');
-      const scanBtn = document.getElementById('btn-run-scan');
+      const page = listHalaman[currentPageIndex];
+      
+      container.classList.remove('page-fade');
+      void container.offsetWidth; // Trigger reflow
+      container.classList.add('page-fade');
 
-      loader.classList.remove('hidden');
-      loader.classList.add('flex');
-      scanBtn.disabled = true;
-      loaderText.textContent = "Menyiapkan mesin OCR...";
+      container.innerHTML = `
+        <h3 class="text-xl md:text-2xl font-serif-book font-bold text-blue-900 leading-tight mb-5 border-b border-stone-300/40 pb-2.5">
+          ${page.title}
+        </h3>
+        <p class="text-stone-800 text-sm md:text-base leading-relaxed whitespace-pre-line font-serif">
+          ${page.content}
+        </p>
+      `;
+      pageNumSpan.textContent = formatPageNumber(page.pageNumber, page.numberFormat);
 
+      const totalHal = listHalaman.length;
+      progressSpan.textContent = `Halaman ${formatPageNumber(page.pageNumber, page.numberFormat)} dari ${totalHal} Hlm`;
+    }
+
+    function navPrev() {
+      if (currentPageIndex > 0) {
+        currentPageIndex -= 1;
+        renderBook();
+      }
+    }
+
+    function navNext() {
+      const listHalaman = getFilteredPages();
+      if (currentPageIndex < listHalaman.length - 1) {
+        currentPageIndex += 1;
+        renderBook();
+      }
+    }
+
+    function handleSearch() {
+      const sVal = document.getElementById('search-input').value;
+      searchQuery = sVal;
+      
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (sVal) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      currentPageIndex = 0;
+      renderBook();
+    }
+
+    function clearSearch() {
+      document.getElementById('search-input').value = "";
+      searchQuery = "";
+      document.getElementById('clear-search-btn').classList.add('hidden');
+      currentPageIndex = 0;
+      renderBook();
+    }
+
+    // Memuat logo watermark dari Supabase (jika ada)
+    async function fetchLogoWatermark() {
       try {
-        const result = await Tesseract.recognize(
-          selectedImageBase64,
-          'ind+eng', // Bahasa Indonesia + Inggris supaya lebih akurat untuk dokumen campuran
-          {
-            logger: (m) => {
-              if (m.status === 'recognizing text') {
-                const percent = Math.round((m.progress || 0) * 100);
-                loaderText.textContent = `Membaca teks... ${percent}%`;
-              } else if (m.status) {
-                loaderText.textContent = m.status.charAt(0).toUpperCase() + m.status.slice(1) + "...";
-              }
-            }
-          }
-        );
-
-        const resultText = (result?.data?.text || "").trim();
-
-        loader.classList.remove('flex');
-        loader.classList.add('hidden');
-        scanBtn.disabled = false;
-
-        if (resultText) {
-          document.getElementById('scanner-result').value = resultText;
-          document.getElementById('btn-apply-text').disabled = false;
-          showToast('Teks berhasil diekstrak dari gambar!');
-        } else {
-          showToast('Tidak ada teks yang terdeteksi. Coba foto yang lebih jelas dan terang.', true);
-        }
-      } catch (error) {
-        console.error("Gagal menjalankan OCR:", error);
-        loader.classList.remove('flex');
-        loader.classList.add('hidden');
-        scanBtn.disabled = false;
-        showToast('Gagal memproses gambar. Coba ambil gambar yang lebih jelas.', true);
-      }
-    }
-
-    // --- MESIN 2: Gemini AI (khusus membaca tabel dari gambar) ---
-    async function runGeminiTableScanner() {
-      if (!selectedImageBase64) {
-        showToast('Unggah foto terlebih dahulu!', true);
-        return;
-      }
-
-      const apiKey = getGeminiApiKey();
-      if (!apiKey) {
-        showToast('Gemini API belum terhubung. Klik "Hubungkan" terlebih dahulu.', true);
-        openGeminiConnectModal();
-        return;
-      }
-
-      const loader = document.getElementById('scan-loader');
-      const loaderText = document.getElementById('scan-loader-text');
-      const scanBtn = document.getElementById('btn-run-scan');
-
-      loader.classList.remove('hidden');
-      loader.classList.add('flex');
-      scanBtn.disabled = true;
-      loaderText.textContent = "Mengirim gambar ke Gemini AI...";
-
-      try {
-        // Pisahkan mime type & data base64 murni dari data URL
-        const matches = selectedImageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
-        if (!matches) throw new Error("Format gambar tidak valid.");
-        const mimeType = matches[1];
-        const base64Data = matches[2];
-
-        loaderText.textContent = "Gemini sedang membaca struktur tabel...";
-
-        const response = await fetch(getGeminiApiUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [
-                  {
-                    text: "Perhatikan gambar ini. Temukan tabel yang ada di dalamnya dan ubah menjadi teks terstruktur dalam format tabel Markdown (gunakan tanda | dan -). Pertahankan semua baris, kolom, dan header apa adanya sesuai gambar, tanpa menambahkan komentar, penjelasan, atau teks pembuka/penutup apapun. Jika ada beberapa tabel, pisahkan dengan baris kosong. Jika ada teks lain di luar tabel yang relevan sebagai judul tabel, sertakan sebagai judul singkat di atas tabel tersebut."
-                  },
-                  {
-                    inline_data: {
-                      mime_type: mimeType,
-                      data: base64Data
-                    }
-                  }
-                ]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.1
-            }
-          })
+        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.logo`, {
+          method: "GET",
+          headers: SUPABASE_HEADERS
         });
-
-        if (!response.ok) {
-          const errBody = await response.text();
-          if (response.status === 400 || response.status === 403) {
-            showToast('API key Gemini tidak valid. Silakan hubungkan ulang.', true);
-            disconnectGemini();
-          }
-          throw new Error(`Gemini API error (${response.status}): ${errBody}`);
-        }
+        if (!response.ok) throw new Error("Gagal mengambil logo");
 
         const data = await response.json();
-        const resultText = (
-          data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("\n") || ""
-        ).trim();
-
-        loader.classList.remove('flex');
-        loader.classList.add('hidden');
-        scanBtn.disabled = false;
-
-        if (resultText) {
-          document.getElementById('scanner-result').value = resultText;
-          document.getElementById('btn-apply-text').disabled = false;
-          showToast('Tabel berhasil dipindai dengan Gemini AI!');
-        } else {
-          showToast('Gemini tidak menemukan tabel pada gambar ini.', true);
+        if (Array.isArray(data) && data.length > 0 && data[0].value) {
+          const img = document.getElementById('page-logo-watermark');
+          img.src = data[0].value;
+          img.classList.remove('hidden');
         }
       } catch (error) {
-        console.error("Gagal menjalankan Gemini Table Scanner:", error);
-        loader.classList.remove('flex');
-        loader.classList.add('hidden');
-        scanBtn.disabled = false;
-        showToast('Gagal memindai tabel dengan Gemini. Periksa API key & koneksi Anda.', true);
+        console.warn("Logo watermark tidak tersedia:", error);
       }
-    }
-
-    function copyToContentField() {
-      const scannedText = document.getElementById('scanner-result').value;
-      if (!scannedText.trim()) return;
-
-      document.getElementById('form-content').value = scannedText;
-      showToast('Teks dipindahkan ke form materi!');
     }
 
     window.onload = function() {
-      loadPagesFromSupabase();
-      loadBookTitleStatus();
-      loadBgImageStatus();
-      loadBgColorStatus();
-      loadLogoStatus();
+      fetchBookTitle();
+      fetchBookPeriod();
+      fetchLandingBackground();
+      fetchBookFromCloud();
+      fetchLogoWatermark();
     };
   </script>
 </body>
