@@ -69,12 +69,16 @@
     #landing-screen {
       background: radial-gradient(ellipse at center, #1c1917 0%, #0c0a09 100%);
     }
-    #book-title-input {
-      background: transparent;
-      border: none;
-      outline: none;
-      text-align: center;
-      caret-color: #3b82f6;
+    #book-title-display {
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+    }
+    #book-title-display.title-synced {
+      color: #93c5fd;
+      text-shadow: 0 0 24px rgba(59, 130, 246, 0.55), 0 0 60px rgba(59, 130, 246, 0.25);
+    }
+    #book-title-display.title-unsynced {
+      color: #57534e;
+      text-shadow: none;
     }
     /* Modal pencarian */
     #search-modal-backdrop {
@@ -88,15 +92,18 @@
   <div id="landing-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center px-6">
     <div class="w-full max-w-2xl text-center">
       <p class="text-xs uppercase tracking-[0.3em] text-blue-600 font-semibold mb-4">Selamat Datang</p>
-      <input
-        type="text"
-        id="book-title-input"
-        value="Pustaka Klasik"
-        class="w-full text-4xl md:text-6xl font-header-book font-bold text-stone-100 py-2"
-        spellcheck="false"
-      />
-      <p class="text-sm text-stone-500 mt-4">Klik judul di atas untuk mengganti nama buku</p>
+      <h1
+        id="book-title-display"
+        class="title-unsynced w-full text-4xl md:text-6xl font-header-book font-bold py-2"
+      >Pustaka Klasik</h1>
+      <p id="sync-status-text" class="text-xs text-stone-500 mt-4 tracking-wide">Menghubungkan ke Supabase...</p>
     </div>
+
+    <!-- Footer dipindahkan ke bawah judul, di dalam panel landing -->
+    <footer class="mt-10 text-center text-xs text-stone-600 px-4">
+      <p>© 2026 Pustaka Buku Fisik Klasik. Hak Cipta Terlindungi.</p>
+      <p class="text-blue-800/50 font-medium mt-0.5">Model Cloud Supabase Terintegrasi</p>
+    </footer>
 
     <!-- Tombol Buka Pojok Kanan Bawah -->
     <button
@@ -110,13 +117,13 @@
     </button>
   </div>
 
-  <!-- ================= TOMBOL CARI MENGAMBANG ================= -->
+  <!-- ================= TOMBOL CARI MENGAMBANG (KECIL) ================= -->
   <button
     onclick="openSearchModal()"
-    class="fixed top-5 right-5 z-40 p-3 bg-stone-950/80 hover:bg-stone-900 border border-stone-800 rounded-full shadow-lg backdrop-blur transition-all active:scale-95"
+    class="fixed top-4 right-4 z-40 p-2 bg-stone-950/80 hover:bg-stone-900 border border-stone-800 rounded-full shadow-lg backdrop-blur transition-all active:scale-95"
     title="Cari bab atau materi buku"
   >
-    <svg class="w-5 h-5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <svg class="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
   </button>
 
   <!-- ================= MODAL POPUP PENCARIAN (HITAM) ================= -->
@@ -143,12 +150,6 @@
       </div>
       <p class="text-center text-xs text-stone-600 mt-4">Tekan Esc atau klik di luar kotak untuk menutup</p>
     </div>
-  </div>
-
-  <!-- ================= INDIKATOR KONEKSI CLOUD (KECIL, MENGAMBANG) ================= -->
-  <div class="fixed top-5 left-5 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-950/80 border border-stone-800 text-xs backdrop-blur">
-    <span id="conn-indicator" class="w-2.5 h-2.5 rounded-full bg-stone-600 animate-pulse"></span>
-    <span id="conn-status" class="text-stone-400 font-semibold">Memeriksa Database Cloud...</span>
   </div>
 
   <!-- ================= AREA BUKU FULL LAYAR ================= -->
@@ -222,14 +223,6 @@
     </div>
 
   </main>
-
-  <!-- ================= FOOTER (DIPERTAHANKAN) ================= -->
-  <footer class="bg-stone-950 border-t border-stone-800 py-3 text-center text-xs text-stone-500 shrink-0">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p>© 2026 Pustaka Buku Fisik Klasik. Hak Cipta Terlindungi.</p>
-      <p class="text-blue-700/60 font-medium">Model Cloud Supabase Terintegrasi</p>
-    </div>
-  </footer>
 
   <script>
     // ================= KONFIGURASI SUPABASE =================
@@ -324,13 +317,46 @@
       return numberFormat === 'roman' ? toRoman(pageNumber) : String(pageNumber);
     }
 
+    // Menandai status sinkron pada judul buku di layar landing (menyala/redup)
+    function setSyncStatus(isSynced, message) {
+      const titleEl = document.getElementById('book-title-display');
+      const statusText = document.getElementById('sync-status-text');
+      if (isSynced) {
+        titleEl.classList.remove('title-unsynced');
+        titleEl.classList.add('title-synced');
+      } else {
+        titleEl.classList.remove('title-synced');
+        titleEl.classList.add('title-unsynced');
+      }
+      if (statusText) statusText.textContent = message;
+    }
+
+    // Memuat Judul Buku dari Supabase (hanya bisa diedit lewat admin.html)
+    async function fetchBookTitle() {
+      try {
+        const response = await fetch(`${SUPABASE_SETTINGS_URL}?select=value&key=eq.book_title`, {
+          method: "GET",
+          headers: SUPABASE_HEADERS
+        });
+        if (!response.ok) throw new Error("Gagal mengambil judul buku");
+
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0 && data[0].value) {
+          document.getElementById('book-title-display').textContent = data[0].value;
+          localStorage.setItem('pustaka_klasik_title', data[0].value);
+        }
+      } catch (error) {
+        console.warn("Judul buku tidak dapat dimuat, menggunakan judul lokal/cache:", error);
+        const cachedTitle = localStorage.getItem('pustaka_klasik_title');
+        if (cachedTitle) {
+          document.getElementById('book-title-display').textContent = cachedTitle;
+        }
+      }
+    }
+
     // Memuat Data dari Supabase
     async function fetchBookFromCloud() {
-      const indicator = document.getElementById('conn-indicator');
-      const statusText = document.getElementById('conn-status');
-
-      indicator.className = "w-2.5 h-2.5 rounded-full bg-blue-700 animate-pulse";
-      statusText.textContent = "Menghubungkan ke Supabase...";
+      setSyncStatus(false, "Menghubungkan ke Supabase...");
 
       try {
         const response = await fetch(`${SUPABASE_TABLE_URL}?select=*&order=page_number.asc`, {
@@ -351,11 +377,9 @@
           // Sinkronisasikan juga ke lokal sebagai cache cadangan (mode offline)
           localStorage.setItem('pustaka_klasik_pages', JSON.stringify(pages));
 
-          indicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-          statusText.textContent = "Sinkron dengan Supabase";
+          setSyncStatus(true, "Sinkron dengan Supabase");
         } else {
-          indicator.className = "w-2.5 h-2.5 rounded-full bg-yellow-500";
-          statusText.textContent = "Koneksi OK, Database Kosong";
+          setSyncStatus(false, "Koneksi OK, Database Kosong");
           pages = [];
         }
       } catch (error) {
@@ -369,8 +393,7 @@
             pages = [...defaultPages];
           }
         }
-        indicator.className = "w-2.5 h-2.5 rounded-full bg-red-500";
-        statusText.textContent = "Koneksi Gagal (Memuat Cache Lokal)";
+        setSyncStatus(false, "Koneksi Gagal (Memuat Cache Lokal)");
       }
 
       renderBook();
@@ -496,6 +519,7 @@
     }
 
     window.onload = function() {
+      fetchBookTitle();
       fetchBookFromCloud();
       fetchLogoWatermark();
     };
